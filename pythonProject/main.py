@@ -1,4 +1,4 @@
-from scapy.all import rdpcap, conf
+from scapy.all import rdpcap, conf, Raw
 from scapy.all import Ether, IP, ICMP
 from typing import Dict, List
 
@@ -27,7 +27,7 @@ class AnalyzeNetwork:
         for dic in info:
             if dic["MAC"] == mac:
                 return dic
-        raise {}
+        return {}
 
     def get_info_by_ip(self, ip: str):
         """returns a dict with all information about the device with
@@ -53,6 +53,12 @@ class AnalyzeNetwork:
                 device_info["FLAGS"] = packet[IP].flags
             if ICMP in packet:
                 device_info["PAYLOAD SIZE"] = len(packet[ICMP].payload)
+            if packet.haslayer(Raw):
+                payload = packet[Raw].load.decode(errors="ignore")
+                if "User-Agent:" in payload:
+                    for line in payload.split("\r\n"):
+                        if line.startswith("User-Agent:"):
+                            device_info["USER AGENT"] = line[11:]
             info.append(device_info)
 
         return [e for i, e in enumerate(info) if e not in info[:i]]
@@ -95,9 +101,9 @@ class AnalyzeNetwork:
 
 
 if __name__ == "__main__":
-    path: str = "C:\\Users\\User\\Desktop\\Mooli\\Arazim\\PP7070\\Networks\\guess-who\\pcap-02.pcapng"
+    path: str = "C:\\Users\\User\\Desktop\\Mooli\\Arazim\\PP7070\\Networks\\guess-who\\pcap-03.pcapng"
     an = AnalyzeNetwork(path)
     information = an.get_info()
     print(information)
-    print(an.guess_os(an.get_info_by_mac("00:0c:29:1d:1e:8f")))
-    print(an.guess_os(an.get_info_by_ip("192.168.226.1")))
+    print(an.guess_os(an.get_info_by_mac("00:50:56:e1:14:d1")))
+    print(an.guess_os(an.get_info_by_ip("192.168.226.140")))
